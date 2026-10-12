@@ -1,0 +1,11 @@
+{
+  "name": "tuempresa/recepcionproveedor",
+  "description": "Recepción de mercancía de proveedor con actualización de stock para PrestaShop 9",
+  "type": "prestashop-module",
+  "license": "AFL-3.0",
+  "require": { "php": ">=8.1" },
+  "autoload": {
+    "psr-4": { "PrestaShop\\Module\\RecepcionProveedor\\": "src/" }
+  },
+  "config": { "prepend-autoloader": false }
+}

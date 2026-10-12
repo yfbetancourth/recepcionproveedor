@@ -1,0 +1,18 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  PrestaShop\Module\RecepcionProveedor\Repository\ReceptionRepository:
+    arguments:
+      $connection: '@doctrine.dbal.default_connection'
+      $dbPrefix: '%database_prefix%'
+
+  PrestaShop\Module\RecepcionProveedor\Service\ReceptionConfirmer: ~
+
+  PrestaShop\Module\RecepcionProveedor\Form\ReceptionHeaderType: ~
+
+  PrestaShop\Module\RecepcionProveedor\Controller\Admin\ReceptionController:
+    public: true
+    tags: ['controller.service_arguments']

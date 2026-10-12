@@ -1,0 +1,263 @@
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+{% trans_default_domain 'Modules.Recepcionproveedor.Admin' %}
+{% form_theme form '@PrestaShop/Admin/TwigTemplateForm/prestashop_ui_kit.html.twig' %}
+
+{% block content %}
+{% set isDraft = reception.status == 'draft' %}
+{% set csrf = csrf_token('recepcionproveedor') %}
+
+{# ---------- Cabecera ---------- #}
+<div class="card">
+  <h3 class="card-header">
+    {{ 'Recepción #%id%'|trans({'%id%': reception.id_reception}) }}
+    {% if isDraft %}
+      <span class="badge badge-warning">{{ 'Borrador'|trans }}</span>
+    {% else %}
+      <span class="badge badge-success">{{ 'Confirmada'|trans }}</span>
+    {% endif %}
+  </h3>
+  <div class="card-body">
+    {{ form_start(form, {attr: {'id': 'reception-header-form'}}) }}
+    {% if isDraft %}
+      <div
+        id="supplier-search-block"
+        data-supplier-id-input="{{ form.id_supplier.vars.id }}"
+        data-selected-supplier-details-url="{{ form.id_supplier.vars.value ? path('admin_suppliers_edit', {supplierId: form.id_supplier.vars.value}) : '' }}"
+      >
+        <div class="row js-search-supplier-row mb-4">
+          <label class="col-md-3 text-md-right col-form-label" for="{{ form.supplier_search.vars.id }}">
+            {{ 'Buscar proveedor'|trans }}
+          </label>
+          <div class="col-md-4 mb-2 position-relative">
+            {{ form_widget(form.supplier_search, {attr: {
+              'class': 'form-control',
+              'data-endpoint': path('recepcionproveedor_search_suppliers'),
+              'aria-controls': 'supplier-search-results',
+              'aria-autocomplete': 'list',
+              'aria-expanded': 'false'
+            }}) }}
+            {{ form_widget(form.id_supplier) }}
+            {{ form_errors(form.supplier_search) }}
+            <small class="form-text text-muted">{{ 'Busca un proveedor existente escribiendo las primeras letras de su nombre.'|trans }}</small>
+          </div>
+          <div class="col">
+            <span class="mr-2">{{ 'o'|trans }}</span>
+            <a class="btn btn-primary" href="{{ path('admin_suppliers_create') }}" target="_blank" rel="noopener">
+              {{ 'Añadir nuevo proveedor'|trans }}
+            </a>
+          </div>
+        </div>
+
+        <div id="supplier-search-empty-result-warn" class="d-none">
+          <div class="alert alert-warning" role="alert">
+            <p class="alert-text mb-0">{{ 'No se encontraron proveedores.'|trans }}</p>
+          </div>
+        </div>
+
+        <div id="supplier-search-loading-notice" class="d-none">
+          <div class="alert alert-info" role="status">
+            <p class="alert-text mb-0">{{ 'Buscando proveedores...'|trans }}</p>
+          </div>
+        </div>
+
+        <div id="supplier-search-error-notice" class="alert alert-danger d-none" role="alert">
+          {{ 'No se pudieron cargar los proveedores. Verifica tus permisos e inténtalo de nuevo.'|trans }}
+        </div>
+
+        <div id="supplier-search-results" class="row js-supplier-search-results" role="list" aria-live="polite"></div>
+      </div>
+
+      <div id="supplier-search-result-template" class="d-none">
+        <div class="col-sm-6 col-md-4 col-xl-3 js-supplier-search-result-col">
+          <div class="card js-supplier-search-result">
+            <div class="card-header">
+              <h3 class="card-header-title d-inline-block js-supplier-name"></h3>
+              <div class="d-inline-block float-right">#<span class="js-supplier-id"></span></div>
+            </div>
+            <div class="card-footer">
+              <a class="btn btn-outline-secondary js-details-supplier-btn" target="_blank" rel="noopener">
+                {{ 'Detalles'|trans }}
+              </a>
+              <button type="button" class="btn btn-outline-primary float-right js-choose-supplier-btn">
+                {{ 'Elegir'|trans }}
+              </button>
+              <button type="button" class="btn btn-outline-primary float-right js-change-supplier-btn d-none">
+                {{ 'Cambiar'|trans }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="row mb-3">
+        <div class="col-md-3 text-md-right font-weight-bold">{{ 'Proveedor'|trans }}</div>
+        <div class="col-md-9">
+          <div class="card border-success">
+            <div class="card-header">
+              <span>{{ reception.supplier_name ?: 'Sin proveedor'|trans }}</span>
+              {% if reception.id_supplier %}
+                <span class="float-right">#{{ reception.id_supplier }}</span>
+              {% endif %}
+            </div>
+            {% if reception.id_supplier %}
+              <div class="card-footer">
+                <a class="btn btn-outline-secondary" href="{{ path('admin_suppliers_edit', {supplierId: reception.id_supplier}) }}" target="_blank" rel="noopener">
+                  {{ 'Detalles'|trans }}
+                </a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {{ form_widget(form.supplier_search, {attr: {'class': 'd-none'}}) }}
+      {{ form_widget(form.id_supplier) }}
+    {% endif %}
+      {{ form_rest(form) }}
+      {% if isDraft %}
+        <button type="submit" class="btn btn-primary">{{ 'Guardar cabecera'|trans }}</button>
+      {% else %}
+        <p class="text-muted mb-0">{{ 'Confirmada el %date%.'|trans({'%date%': reception.date_confirmed}) }}</p>
+      {% endif %}
+    {{ form_end(form) }}
+  </div>
+</div>
+
+{# ---------- Productos ---------- #}
+<div class="card mt-3">
+  <h3 class="card-header">{{ 'Productos recibidos'|trans }}</h3>
+  <div class="card-body">
+
+    {% if isDraft %}
+    <form method="post" id="add-line-form" class="mb-4" action="{{ path('recepcionproveedor_add_line', {id: reception.id_reception}) }}">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <input type="hidden" name="id_product" id="line-id-product" value="">
+      <input type="hidden" name="id_product_attribute" id="line-id-pa" value="0">
+      <div class="form-row align-items-end">
+        <div class="col-md-6 position-relative">
+          <label for="product-search">{{ 'Producto (nombre, referencia, EAN o ID)'|trans }}</label>
+          <input type="search" id="product-search" class="form-control" autocomplete="off"
+                 data-endpoint="{{ path('recepcionproveedor_search_products') }}"
+                 aria-controls="product-results" aria-autocomplete="list" aria-expanded="false" role="combobox">
+          <div id="product-results" class="list-group position-absolute w-100 recepcion-results" role="listbox"></div>
+        </div>
+        <div class="col-md-2">
+          <label for="line-qty">{{ 'Cantidad'|trans }}</label>
+          <input type="number" min="1" step="1" id="line-qty" name="quantity" class="form-control" value="1" required>
+        </div>
+        <div class="col-md-2">
+          <label for="line-cost">{{ 'Costo unitario'|trans }}</label>
+          <input type="number" min="0" step="any" id="line-cost" name="unit_cost" class="form-control" value="0" required>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-outline-primary btn-block">{{ 'Añadir'|trans }}</button>
+        </div>
+      </div>
+    </form>
+    {% endif %}
+
+    {% if lines is empty %}
+      <p class="text-muted mb-0">{{ 'Aún no hay productos en esta recepción.'|trans }}</p>
+    {% else %}
+      <form method="post" id="save-lines-form" action="{{ path('recepcionproveedor_save_lines', {id: reception.id_reception}) }}">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>{{ 'Producto'|trans }}</th>
+                <th>{{ 'Referencia'|trans }}</th>
+                <th style="width:140px">{{ 'Cantidad'|trans }}</th>
+                <th style="width:160px">{{ 'Costo unitario'|trans }}</th>
+                <th class="text-right">{{ 'Subtotal'|trans }}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for line in lines %}
+              <tr>
+                <td>{{ line.name }}</td>
+                <td>{{ line.reference }}</td>
+                <td>
+                  {% if isDraft %}
+                    <input type="number" min="1" step="1" class="form-control" name="lines[{{ line.id_line }}][quantity]" value="{{ line.quantity }}">
+                  {% else %}{{ line.quantity }}{% endif %}
+                </td>
+                <td>
+                  {% if isDraft %}
+                    <input type="number" min="0" step="any" class="form-control" name="lines[{{ line.id_line }}][unit_cost]" value="{{ line.unit_cost }}">
+                  {% else %}{{ line.unit_cost|number_format(2) }}{% endif %}
+                </td>
+                <td class="text-right">{{ (line.quantity * line.unit_cost)|number_format(2) }}</td>
+                <td class="text-right">
+                  {% if isDraft %}
+                    <button type="submit" form="delete-line-{{ line.id_line }}" class="btn btn-sm btn-outline-danger">{{ 'Quitar'|trans }}</button>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th colspan="2" class="text-right">{{ 'Totales'|trans }}</th>
+                <th>{{ totalUnits }}</th>
+                <th></th>
+                <th class="text-right">{{ totalCost|number_format(2) }}</th>
+                <th></th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        {% if isDraft %}
+          <button type="submit" class="btn btn-primary">{{ 'Guardar líneas'|trans }}</button>
+        {% endif %}
+      </form>
+
+      {% if isDraft %}
+        {% for line in lines %}
+          <form method="post" id="delete-line-{{ line.id_line }}" action="{{ path('recepcionproveedor_delete_line', {id: reception.id_reception, lineId: line.id_line}) }}">
+            <input type="hidden" name="_csrf" value="{{ csrf }}">
+          </form>
+        {% endfor %}
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+{# ---------- Acciones ---------- #}
+<div class="card mt-3">
+  <div class="card-body d-flex justify-content-between flex-wrap">
+    <a href="{{ path('recepcionproveedor_index') }}" class="btn btn-outline-secondary">{{ 'Volver al listado'|trans }}</a>
+
+    {% if isDraft %}
+      <div class="d-flex">
+        <form method="post" class="mr-2" action="{{ path('recepcionproveedor_delete', {id: reception.id_reception}) }}"
+              onsubmit="return confirm('{{ 'Se eliminará este borrador. ¿Continuar?'|trans|e('js') }}');">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button type="submit" class="btn btn-outline-danger">{{ 'Eliminar borrador'|trans }}</button>
+        </form>
+
+          <button type="submit" form="reception-header-form" formaction="{{ path('recepcionproveedor_confirm', {id: reception.id_reception}) }}" formmethod="post" class="btn btn-success" onclick="return confirm('{{ 'Se sumarán %units% unidades al stock y la recepción ya no podrá editarse. Se confirmará lo que está guardado. ¿Continuar?'|trans({'%units%': totalUnits})|e('js') }}');">
+            <i class="material-icons">check_circle</i> {{ 'Confirmar recepción y actualizar stock'|trans }}
+          </button>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <style>
+    .recepcion-results{z-index:1000;max-height:260px;overflow:auto}
+    #supplier-search-results .js-supplier-search-result-col{margin-bottom:1rem}
+  </style>
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+  {% if reception.status == 'draft' %}
+  {% set basePathParts = app.request.basePath|trim('/')|split('/') %}
+  {% set shopRootPath = basePathParts|slice(0, -1)|join('/') %}
+  <script src="{{ shopRootPath ? '/' ~ shopRootPath : '' }}/modules/recepcionproveedor/views/js/admin.js"></script>
+  {% endif %}
+{% endblock %}

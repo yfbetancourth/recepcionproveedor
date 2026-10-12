@@ -1,0 +1,131 @@
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+{% trans_default_domain 'Modules.Recepcionproveedor.Admin' %}
+
+{% block content %}
+  <div class="row mb-4">
+    <div class="col-sm-6 col-xl-3 mb-3 mb-xl-0">
+      <a class="text-reset text-decoration-none" href="{{ path('recepcionproveedor_index') }}">
+        <div class="card h-100">
+          <div class="card-body">
+            <div class="text-muted mb-1">{{ 'Total de recepciones'|trans }}</div>
+            <div class="h2 mb-0">{{ summary.total }}</div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-sm-6 col-xl-3 mb-3 mb-xl-0">
+      <a class="text-reset text-decoration-none" href="{{ path('recepcionproveedor_index', {status: 'draft'}) }}">
+        <div class="card h-100">
+          <div class="card-body">
+            <div class="text-muted mb-1">{{ 'Borradores'|trans }}</div>
+            <div class="h2 mb-0">{{ summary.drafts }}</div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-sm-6 col-xl-3 mb-3 mb-sm-0">
+      <a class="text-reset text-decoration-none" href="{{ path('recepcionproveedor_index', {status: 'confirmed'}) }}">
+        <div class="card h-100">
+          <div class="card-body">
+            <div class="text-muted mb-1">{{ 'Confirmadas'|trans }}</div>
+            <div class="h2 mb-0">{{ summary.confirmed }}</div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-muted mb-1">{{ 'Costo confirmado'|trans }}</div>
+          <div class="h2 mb-1">{{ summary.confirmed_cost|number_format(2, ',', '.') }}</div>
+          <small class="text-muted">{{ 'Unidades recibidas: %units%'|trans({'%units%': summary.confirmed_units|number_format(0, ',', '.')}) }}</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card js-grid-panel" id="recepcionproveedor_grid_panel">
+    <div class="card-header js-grid-header d-flex justify-content-between align-items-center">
+      <h3 class="card-header-title mb-0">{{ 'Recepciones de proveedor'|trans }} ({{ receptions|length }})</h3>
+      <form method="post" action="{{ path('recepcionproveedor_create') }}" class="mb-0">
+        <input type="hidden" name="_csrf" value="{{ csrf_token('recepcionproveedor') }}">
+        <button type="submit" class="btn btn-primary">
+          <i class="material-icons">add_circle_outline</i> {{ 'Nueva recepción'|trans }}
+        </button>
+      </form>
+    </div>
+
+    <div class="card-body">
+      <ul class="nav nav-tabs mb-3" role="tablist">
+        <li class="nav-item">
+          <a class="nav-link {{ currentStatus is null ? 'active' : '' }}" href="{{ path('recepcionproveedor_index') }}" aria-current="{{ currentStatus is null ? 'page' : 'false' }}">
+            {{ 'Todas'|trans }} <span class="badge badge-secondary ml-1">{{ summary.total }}</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {{ currentStatus == 'draft' ? 'active' : '' }}" href="{{ path('recepcionproveedor_index', {status: 'draft'}) }}" aria-current="{{ currentStatus == 'draft' ? 'page' : 'false' }}">
+            {{ 'Borradores'|trans }} <span class="badge badge-secondary ml-1">{{ summary.drafts }}</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {{ currentStatus == 'confirmed' ? 'active' : '' }}" href="{{ path('recepcionproveedor_index', {status: 'confirmed'}) }}" aria-current="{{ currentStatus == 'confirmed' ? 'page' : 'false' }}">
+            {{ 'Confirmadas'|trans }} <span class="badge badge-secondary ml-1">{{ summary.confirmed }}</span>
+          </a>
+        </li>
+      </ul>
+
+      {% if receptions is empty %}
+        <div class="text-center text-muted py-5">
+          <i class="material-icons mb-2" aria-hidden="true">inventory_2</i>
+          <p class="mb-0">{{ 'Todavía no hay recepciones para este filtro.'|trans }}</p>
+        </div>
+      {% else %}
+        <div class="table-responsive">
+          <table id="recepcionproveedor_grid_table" class="grid-table js-grid-table table table-hover">
+            <thead class="thead-default">
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">{{ 'Proveedor'|trans }}</th>
+                <th scope="col">{{ 'Nº de recibo'|trans }}</th>
+                <th scope="col">{{ 'Fecha del recibo'|trans }}</th>
+                <th scope="col" class="text-right">{{ 'Unidades'|trans }}</th>
+                <th scope="col" class="text-right">{{ 'Costo total'|trans }}</th>
+                <th scope="col">{{ 'Pago'|trans }}</th>
+                <th scope="col">{{ 'Estado'|trans }}</th>
+                <th scope="col" class="text-right">{{ 'Acciones'|trans }}</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for r in receptions %}
+              <tr>
+                <td class="text-muted">{{ r.id_reception }}</td>
+                <td><strong>{{ r.supplier_name ?: '—' }}</strong></td>
+                <td>{{ r.receipt_number ?: '—' }}</td>
+                <td>{{ r.receipt_date ? r.receipt_date|date('d/m/Y') : '—' }}</td>
+                <td class="text-right">{{ r.total_units|number_format(0, ',', '.') }}</td>
+                <td class="text-right">{{ r.total_cost|number_format(2, ',', '.') }}</td>
+                <td><span class="text-muted">{{ 'Sin registrar'|trans }}</span></td>
+                <td class="clickable column-status">
+                  <a class="text-decoration-none" href="{{ path('recepcionproveedor_edit', {id: r.id_reception}) }}" aria-label="{{ 'Ver recepción #%id%'|trans({'%id%': r.id_reception}) }}">
+                    {% if r.status == 'confirmed' %}
+                      <span class="badge badge-success">{{ 'Confirmada'|trans }}</span>
+                    {% else %}
+                      <span class="badge badge-warning">{{ 'Borrador'|trans }}</span>
+                    {% endif %}
+                  </a>
+                </td>
+                <td class="text-right">
+                  <a class="btn btn-sm btn-outline-secondary" href="{{ path('recepcionproveedor_edit', {id: r.id_reception}) }}">
+                    <i class="material-icons" aria-hidden="true">{{ r.status == 'draft' ? 'edit' : 'visibility' }}</i>
+                    {{ r.status == 'draft' ? 'Editar'|trans : 'Ver'|trans }}
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

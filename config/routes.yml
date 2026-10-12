@@ -1,0 +1,84 @@
+recepcionproveedor_index:
+  path: /recepcionproveedor/recepciones
+  methods: [GET]
+  defaults:
+    _controller: 'PrestaShop\Module\RecepcionProveedor\Controller\Admin\ReceptionController::indexAction'
+    _legacy_controller: AdminRecepcionProveedor
+    _legacy_link: AdminRecepcionProveedor
+
+recepcionproveedor_create:
+  path: /recepcionproveedor/recepciones/nueva
+  methods: [POST]
+  defaults:
+    _controller: 'PrestaShop\Module\RecepcionProveedor\Controller\Admin\ReceptionController::createAction'
+    _legacy_controller: AdminRecepcionProveedor
+
+recepcionproveedor_search_products:
+  path: /recepcionproveedor/recepciones/buscar-productos
+  methods: [GET]
+  defaults:
+    _controller: 'PrestaShop\Module\RecepcionProveedor\Controller\Admin\ReceptionController::searchProductsAction'
+    _legacy_controller: AdminRecepcionProveedor
+
+recepcionproveedor_search_suppliers:
+  path: /recepcionproveedor/recepciones/buscar-proveedores
+  methods: [GET]
+  defaults:
+    _controller: 'PrestaShop\Module\RecepcionProveedor\Controller\Admin\ReceptionController::searchSuppliersAction'
+    _legacy_controller: AdminRecepcionProveedor
+
+recepcionproveedor_edit:
+  path: /recepcionproveedor/recepciones/{id}/editar
+  methods: [GET]
+  requirements: { id: '\d+' }
+  defaults:
+    _controller: 'PrestaShop\Module\RecepcionProveedor\Controller\Admin\ReceptionController::editAction'
+    _legacy_controller: AdminRecepcionProveedor
+
+recepcionproveedor_save_header:
+  path: /recepcionproveedor/recepciones/{id}/cabecera
+  methods: [POST]
+  requirements: { id: '\d+' }
+  defaults:
+    _controller: 'PrestaShop\Module\RecepcionProveedor\Controller\Admin\ReceptionController::saveHeaderAction'
+    _legacy_controller: AdminRecepcionProveedor
+
+recepcionproveedor_add_line:
+  path: /recepcionproveedor/recepciones/{id}/lineas
+  methods: [POST]
+  requirements: { id: '\d+' }
+  defaults:
+    _controller: 'PrestaShop\Module\RecepcionProveedor\Controller\Admin\ReceptionController::addLineAction'
+    _legacy_controller: AdminRecepcionProveedor
+
+recepcionproveedor_save_lines:
+  path: /recepcionproveedor/recepciones/{id}/lineas/guardar
+  methods: [POST]
+  requirements: { id: '\d+' }
+  defaults:
+    _controller: 'PrestaShop\Module\RecepcionProveedor\Controller\Admin\ReceptionController::saveLinesAction'
+    _legacy_controller: AdminRecepcionProveedor
+
+recepcionproveedor_delete_line:
+  path: /recepcionproveedor/recepciones/{id}/lineas/{lineId}/eliminar
+  methods: [POST]
+  requirements: { id: '\d+', lineId: '\d+' }
+  defaults:
+    _controller: 'PrestaShop\Module\RecepcionProveedor\Controller\Admin\ReceptionController::deleteLineAction'
+    _legacy_controller: AdminRecepcionProveedor
+
+recepcionproveedor_confirm:
+  path: /recepcionproveedor/recepciones/{id}/confirmar
+  methods: [POST]
+  requirements: { id: '\d+' }
+  defaults:
+    _controller: 'PrestaShop\Module\RecepcionProveedor\Controller\Admin\ReceptionController::confirmAction'
+    _legacy_controller: AdminRecepcionProveedor
+
+recepcionproveedor_delete:
+  path: /recepcionproveedor/recepciones/{id}/eliminar
+  methods: [POST]
+  requirements: { id: '\d+' }
+  defaults:
+    _controller: 'PrestaShop\Module\RecepcionProveedor\Controller\Admin\ReceptionController::deleteAction'
+    _legacy_controller: AdminRecepcionProveedor
