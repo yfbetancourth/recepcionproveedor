@@ -5,6 +5,7 @@ namespace PrestaShop\Module\RecepcionProveedor\Form;
 
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -46,6 +47,20 @@ class ReceptionHeaderType extends AbstractType
                 'label' => 'Notas',
                 'required' => false,
                 'constraints' => [new Length(max: 2000)],
+            ])
+            ->add('payment_method', ChoiceType::class, [
+                'label' => 'Metodo de pago',
+                'choices' => $options['payment_module_choices'],
+                'required' => false,
+                'placeholder' => 'Sin registrar',
+                'autocomplete' => true,
+            ])
+            ->add('id_order_state', ChoiceType::class, [
+                'label' => 'Estado',
+                'choices' => $options['order_state_choices'],
+                'required' => true,
+                'placeholder' => 'Selecciona un estado',
+                'autocomplete' => true,
             ]);
     }
 
@@ -53,6 +68,10 @@ class ReceptionHeaderType extends AbstractType
     {
         $resolver->setDefaults([
             'translation_domain' => 'Modules.Recepcionproveedor.Admin',
+            'payment_module_choices' => [],
+            'order_state_choices' => [],
         ]);
+        $resolver->setAllowedTypes('payment_module_choices', 'array');
+        $resolver->setAllowedTypes('order_state_choices', 'array');
     }
 }

@@ -21,9 +21,9 @@ class ReceptionRepository
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function findAll(int $idShop, ?string $status = null, int $limit = 100): array
+    public function findAll(int $idShop, ?string $status = null, int $limit = 100, int $idLang = 0): array
     {
-        $params = ['shop' => $idShop];
+        $params = ['shop' => $idShop, 'lang' => $idLang];
         $where = 'r.id_shop = :shop';
         if (null !== $status) {
             $where .= ' AND r.status = :status';
@@ -31,12 +31,13 @@ class ReceptionRepository
         }
 
         $sql = 'SELECT r.id_reception, r.receipt_number, r.receipt_date, r.status, r.date_add, r.date_confirmed,
-                       s.name AS supplier_name,
+                       r.payment_method, r.id_order_state, MAX(osl.name) AS order_state_name, s.name AS supplier_name,
                        COUNT(l.id_line) AS total_lines,
                        COALESCE(SUM(l.quantity), 0) AS total_units,
                        COALESCE(SUM(l.quantity * l.unit_cost), 0) AS total_cost
                 FROM ' . $this->t('recepcionproveedor') . ' r
                 LEFT JOIN ' . $this->t('supplier') . ' s ON s.id_supplier = r.id_supplier
+                LEFT JOIN ' . $this->t('order_state_lang') . ' osl ON osl.id_order_state = r.id_order_state AND osl.id_lang = :lang
                 LEFT JOIN ' . $this->t('recepcionproveedor_line') . ' l ON l.id_reception = r.id_reception
                 WHERE ' . $where . '
                 GROUP BY r.id_reception, s.name
@@ -80,21 +81,23 @@ class ReceptionRepository
     public function find(int $id, int $idShop): ?array
     {
         $row = $this->connection->fetchAssociative(
-            'SELECT r.*, s.name AS supplier_name
+            'SELECT r.*, s.name AS supplier_name, osl.name AS order_state_name
              FROM ' . $this->t('recepcionproveedor') . ' r
              LEFT JOIN ' . $this->t('supplier') . ' s ON s.id_supplier = r.id_supplier
+             LEFT JOIN ' . $this->t('order_state_lang') . ' osl ON osl.id_order_state = r.id_order_state AND osl.id_lang = :lang
              WHERE r.id_reception = :id AND r.id_shop = :shop',
-            ['id' => $id, 'shop' => $idShop]
+            ['id' => $id, 'shop' => $idShop, 'lang' => (int) \Context::getContext()->language->id]
         );
 
         return false === $row ? null : $row;
     }
 
-    public function createDraft(int $idEmployee, int $idShop): int
+    public function createDraft(int $idEmployee, int $idShop, int $idOrderState): int
     {
         $now = date('Y-m-d H:i:s');
         $this->connection->insert($this->t('recepcionproveedor'), [
             'id_shop' => $idShop,
+            'id_order_state' => $idOrderState,
             'status' => 'draft',
             'id_employee' => $idEmployee,
             'date_add' => $now,
@@ -104,18 +107,20 @@ class ReceptionRepository
         return (int) $this->connection->lastInsertId();
     }
 
-    public function updateHeader(int $id, ?int $idSupplier, ?string $number, ?string $date, ?string $notes): void
+    public function updateHeader(int $id, ?int $idSupplier, ?string $number, ?string $date, ?string $notes, ?string $paymentMethod, int $idOrderState): void
     {
         $this->connection->executeStatement(
             'UPDATE ' . $this->t('recepcionproveedor') . '
              SET id_supplier = :supplier, receipt_number = :number, receipt_date = :date,
-                 notes = :notes, date_upd = :now
+                 notes = :notes, payment_method = :payment_method, id_order_state = :order_state, date_upd = :now
              WHERE id_reception = :id AND status = \'draft\'',
             [
                 'supplier' => $idSupplier,
                 'number' => $number,
                 'date' => $date,
                 'notes' => $notes,
+                'payment_method' => $paymentMethod,
+                'order_state' => $idOrderState,
                 'now' => date('Y-m-d H:i:s'),
                 'id' => $id,
             ]

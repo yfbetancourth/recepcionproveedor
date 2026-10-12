@@ -16,7 +16,7 @@ class RecepcionProveedor extends Module
     {
         $this->name = 'recepcionproveedor';
         $this->tab = 'administration';
-        $this->version = '1.0.0';
+        $this->version = '1.0.1';
         $this->author = 'Tu empresa';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = ['min' => '9.0.0', 'max' => _PS_VERSION_];

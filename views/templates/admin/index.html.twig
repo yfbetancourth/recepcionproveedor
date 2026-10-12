@@ -104,14 +104,11 @@
                 <td>{{ r.receipt_date ? r.receipt_date|date('d/m/Y') : '—' }}</td>
                 <td class="text-right">{{ r.total_units|number_format(0, ',', '.') }}</td>
                 <td class="text-right">{{ r.total_cost|number_format(2, ',', '.') }}</td>
-                <td><span class="text-muted">{{ 'Sin registrar'|trans }}</span></td>
+                <td>{{ r.payment_label ?: 'Sin registrar'|trans }}</td>
                 <td class="clickable column-status">
                   <a class="text-decoration-none" href="{{ path('recepcionproveedor_edit', {id: r.id_reception}) }}" aria-label="{{ 'Ver recepción #%id%'|trans({'%id%': r.id_reception}) }}">
-                    {% if r.status == 'confirmed' %}
-                      <span class="badge badge-success">{{ 'Confirmada'|trans }}</span>
-                    {% else %}
-                      <span class="badge badge-warning">{{ 'Borrador'|trans }}</span>
-                    {% endif %}
+                    {% if r.order_state_name %}<span class="badge badge-info">{{ r.order_state_name }}</span>{% else %}<span class="text-muted">?</span>{% endif %}
+                    <small class="d-block text-muted mt-1">{{ r.status == 'confirmed' ? 'Confirmada'|trans : 'Borrador'|trans }}</small>
                   </a>
                 </td>
                 <td class="text-right">

@@ -112,6 +112,20 @@
       {{ form_widget(form.supplier_search, {attr: {'class': 'd-none'}}) }}
       {{ form_widget(form.id_supplier) }}
     {% endif %}
+      <div class="card bg-light mb-3">
+        <div class="card-header">{{ 'Resumen'|trans }}</div>
+        <div class="card-body">
+          <div class="row text-center mb-3">
+            <div class="col-md-4"><small class="text-muted d-block">{{ 'Productos'|trans }}</small><strong>{{ lines|length }}</strong></div>
+            <div class="col-md-4"><small class="text-muted d-block">{{ 'Unidades'|trans }}</small><strong>{{ totalUnits }}</strong></div>
+            <div class="col-md-4"><small class="text-muted d-block">{{ 'Costo total'|trans }}</small><strong>{{ totalCost|number_format(2, ',', '.') }}</strong></div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">{{ form_row(form.payment_method) }}</div>
+            <div class="col-md-6">{{ form_row(form.id_order_state) }}</div>
+          </div>
+        </div>
+      </div>
       {{ form_rest(form) }}
       {% if isDraft %}
         <button type="submit" class="btn btn-primary">{{ 'Guardar cabecera'|trans }}</button>

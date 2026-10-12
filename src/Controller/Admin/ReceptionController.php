@@ -48,7 +48,7 @@ class ReceptionController extends PrestaShopAdminController
         return $this->render(self::TEMPLATE_DIR . 'index.html.twig', [
             'layoutTitle' => $this->t('Recepciones de proveedor'),
             'enableSidebar' => true,
-            'receptions' => $this->repository->findAll($this->shopId(), $status),
+            'receptions' => $this->decoratePaymentLabels($this->repository->findAll($this->shopId(), $status, 100, (int) \Context::getContext()->language->id)),
             'summary' => $this->repository->getSummary($this->shopId()),
             'currentStatus' => $status,
         ]);
@@ -62,7 +62,7 @@ class ReceptionController extends PrestaShopAdminController
             return $this->invalidCsrf();
         }
 
-        $id = $this->repository->createDraft($this->employeeId(), $this->shopId());
+        $id = $this->repository->createDraft($this->employeeId(), $this->shopId(), (int) \Configuration::get('PS_OS_PREPARATION'));
         $this->addFlash('success', $this->t('Recepción en borrador creada.'));
 
         return $this->redirectToRoute('recepcionproveedor_edit', ['id' => $id]);
@@ -114,6 +114,8 @@ class ReceptionController extends PrestaShopAdminController
                 '' !== $number ? $number : null,
                 $date instanceof \DateTimeInterface ? $date->format('Y-m-d') : null,
                 '' !== $notes ? $notes : null,
+                $data['payment_method'] ?: null,
+                (int) $data['id_order_state'],
             );
             $this->addFlash('success', $this->t('Cabecera guardada.'));
 
@@ -273,7 +275,9 @@ class ReceptionController extends PrestaShopAdminController
             $idSupplier,
             $number,
             $date->format('Y-m-d'),
-            '' !== $notes ? $notes : null
+            '' !== $notes ? $notes : null,
+            $data['payment_method'] ?: null,
+            (int) $data['id_order_state']
         );
 
         try {
@@ -353,7 +357,11 @@ class ReceptionController extends PrestaShopAdminController
             'receipt_number' => $reception['receipt_number'],
             'receipt_date' => $reception['receipt_date'] ? new \DateTimeImmutable($reception['receipt_date']) : null,
             'notes' => $reception['notes'],
+            'payment_method' => $reception['payment_method'] ?? null,
+            'id_order_state' => (int) ($reception['id_order_state'] ?? \Configuration::get('PS_OS_PREPARATION')),
         ], [
+            'payment_module_choices' => $this->paymentModuleChoices($reception['payment_method'] ?? null),
+            'order_state_choices' => $this->orderStateChoices(),
             'action' => $this->generateUrl('recepcionproveedor_save_header', ['id' => (int) $reception['id_reception']]),
             'disabled' => 'draft' !== $reception['status'],
         ]);
@@ -362,10 +370,54 @@ class ReceptionController extends PrestaShopAdminController
         return $form;
     }
 
+    /** @return array<string, string> Display label => installed module technical name. */
+    private function paymentModuleChoices(?string $currentValue = null): array
+    {
+        $choices = [];
+        foreach (\PaymentModule::getInstalledPaymentModules() ?: [] as $payment) {
+            $module = \Module::getInstanceByName((string) $payment['name']);
+            if (\Validate::isLoadedObject($module) && $module->active) {
+                $choices[(string) $module->displayName] = (string) $module->name;
+            }
+        }
+        if ($currentValue && !in_array($currentValue, $choices, true)) {
+            $choices[$currentValue] = $currentValue;
+        }
+
+        return $choices;
+    }
+
+    /** @return array<string, int> Order state label => state ID. */
+    private function orderStateChoices(): array
+    {
+        $choices = [];
+        foreach (\OrderState::getOrderStates((int) \Context::getContext()->language->id) ?: [] as $state) {
+            $choices[(string) $state['name']] = (int) $state['id_order_state'];
+        }
+
+        return $choices;
+    }
+
+    /** @param array<int, array<string, mixed>> $receptions
+     *  @return array<int, array<string, mixed>>
+     */
+    private function decoratePaymentLabels(array $receptions): array
+    {
+        $labels = array_flip($this->paymentModuleChoices());
+        foreach ($receptions as &$reception) {
+            $method = $reception['payment_method'] ?? null;
+            $reception['payment_label'] = $method ? ($labels[$method] ?? $method) : null;
+        }
+        unset($reception);
+
+        return $receptions;
+    }
+
     /** @param array<string, mixed> $reception */
     private function renderEdit(array $reception, FormInterface $form): Response
     {
         $lines = $this->repository->getLines((int) $reception['id_reception'], (int) \Context::getContext()->language->id);
+        $reception['payment_label'] = $this->decoratePaymentLabels([$reception])[0]['payment_label'];
 
         $totalUnits = 0;
         $totalCost = 0.0;

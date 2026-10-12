@@ -88,6 +88,8 @@ final class Installer
                 `receipt_number` VARCHAR(64) NULL,
                 `receipt_date` DATE NULL,
                 `notes` TEXT NULL,
+                `payment_method` VARCHAR(128) NULL,
+                `id_order_state` INT UNSIGNED NULL,
                 `status` VARCHAR(16) NOT NULL DEFAULT 'draft',
                 `id_employee` INT UNSIGNED NOT NULL,
                 `id_employee_confirmed` INT UNSIGNED NULL,
